@@ -85,6 +85,8 @@ type WorkspaceConfig struct {
 	} `json:"wsDaemon"`
 
 	WorkspaceClasses map[string]WorkspaceClass `json:"classes,omitempty"`
+
+	UseWsmanagerMk2 bool `json:"useWsmanagerMk2,omitempty"`
 }
 
 type PersistentVolumeClaim struct {
