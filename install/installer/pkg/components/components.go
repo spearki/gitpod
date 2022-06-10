@@ -10,6 +10,7 @@ import (
 	componentswebapp "github.com/gitpod-io/gitpod/installer/pkg/components/components-webapp"
 	componentsworkspace "github.com/gitpod-io/gitpod/installer/pkg/components/components-workspace"
 	dockerregistry "github.com/gitpod-io/gitpod/installer/pkg/components/docker-registry"
+	fluentbit "github.com/gitpod-io/gitpod/installer/pkg/components/fluent-bit"
 	"github.com/gitpod-io/gitpod/installer/pkg/components/gitpod"
 )
 
@@ -49,4 +50,5 @@ var CommonObjects = common.CompositeRenderFunc(
 
 var CommonHelmDependencies = common.CompositeHelmFunc(
 	dockerregistry.Helm,
+	fluentbit.Helm,
 )
