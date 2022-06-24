@@ -46,6 +46,10 @@ func (c *Client) UpdateUsage(usageForTeam map[string]int64) error {
 			},
 		}
 		iter := c.sc.Customers.Search(params)
+
+		res := iter.CustomerSearchResult()
+		fmt.Printf("%+v\n", res)
+
 		for iter.Next() {
 			customer := iter.Customer()
 			log.Infof("found customer %q for teamId %q", customer.Name, customer.Metadata["teamId"])

@@ -6,10 +6,38 @@ package stripe
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/client"
 )
+
+func TestFoo(t *testing.T) {
+	backendMock := &backendMock{}
+	backends := &stripe.Backends{
+		API:     backendMock,
+		Connect: backendMock,
+		Uploads: backendMock,
+	}
+
+	c := Client{sc: client.New("test_key", backends)}
+
+	backendMock.On("CallRaw",
+		http.MethodGet,
+		"/v1/customers/search",
+		"test_key",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything).Return(nil)
+
+	c.UpdateUsage(map[string]int64{
+		"abcd-123": 1,
+	})
+	backendMock.AssertExpectations(t)
+}
 
 func TestCustomerQueriesForTeamIds_SingleQuery(t *testing.T) {
 	testCases := []struct {
