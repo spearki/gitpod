@@ -19,6 +19,7 @@ import (
 	tracelog "github.com/opentracing/opentracing-go/log"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	grpc_status "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -1001,7 +1002,7 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 		snc, err := m.manager.connectToWorkspaceDaemon(ctx, *wso)
 		if err != nil {
 			m.finalizerMapLock.Unlock()
-			return true, nil, err
+			return true, nil, status.Errorf(codes.Unavailable, "cannot connect to workspace daemon: %q", err)
 		}
 
 		ctx, cancelReq := context.WithTimeout(ctx, time.Duration(m.manager.Config.Timeouts.ContentFinalization))
