@@ -1199,7 +1199,7 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 		}
 
 		// by default we assume the worst case scenario. If things aren't just as bad, we'll tune it down below.
-		dataloss = true
+		// dataloss = true
 		backupError = handleGRPCError(ctx, err)
 		gitStatus = gs
 
