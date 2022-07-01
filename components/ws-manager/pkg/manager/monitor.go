@@ -1188,6 +1188,8 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 		dataloss    bool
 		backupError error
 		gitStatus   *csapi.GitStatus
+		st          *status.Status
+		isGRPCError bool
 	)
 	t := time.Now()
 	for i := 0; i < wsdaemonMaxAttempts; i++ {
@@ -1200,14 +1202,14 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 
 		// by default we assume the worst case scenario. If things aren't just as bad, we'll tune it down below.
 		// dataloss = true
-		backupError = handleGRPCError(ctx, err)
+		// backupError = handleGRPCError(ctx, err)
 		gitStatus = gs
 
 		// At this point one of three things may have happened:
 		//   1. the context deadline was exceeded, e.g. due to misconfiguration (not enough time to upload) or network issues. We'll try again.
 		//   2. the service was unavailable, in which case we'll try again.
 		//   3. none of the above, in which case we'll give up
-		st, isGRPCError := grpc_status.FromError(err)
+		st, isGRPCError = grpc_status.FromError(err)
 		if !isGRPCError {
 			break
 		}
@@ -1219,19 +1221,20 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 			time.Sleep(wsdaemonRetryInterval)
 			continue
 		}
+	}
 
-		// service was available, we've tried to do the work and failed. Tell the world about it.
-		if (doBackup || doSnapshot) && isGRPCError {
-			switch st.Code() {
-			case codes.DataLoss:
-				// ws-daemon told us that it's lost data
-				dataloss = true
-			case codes.FailedPrecondition:
-				// the workspace content was not in the state we thought it was
-				dataloss = true
-			}
+	// service was available, we've tried to do the work and failed. Tell the world about it.
+	if (doBackup || doSnapshot) && isGRPCError {
+		switch st.Code() {
+		case codes.Unavailable:
+			dataloss = true
+		case codes.DataLoss:
+			// ws-daemon told us that it's lost data
+			dataloss = true
+		case codes.FailedPrecondition:
+			// the workspace content was not in the state we thought it was
+			dataloss = true
 		}
-		break
 	}
 
 	hist, err := m.manager.metrics.finalizeTimeHistVec.GetMetricWithLabelValues(wsType, wso.Pod.Labels[workspaceClassLabel])
