@@ -265,6 +265,10 @@ func (m *Manager) createPVCForWorkspacePod(startContext *startWorkspaceContext) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", prefix, req.Id),
 			Namespace: m.Config.Namespace,
+			Labels: map[string]string{
+				"app":       "gitpod",
+				"component": "workspace",
+			},
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
