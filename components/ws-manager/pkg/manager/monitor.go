@@ -160,6 +160,8 @@ func (m *Monitor) handleEvent(evt watch.Event) {
 	switch evt.Object.(type) {
 	case *corev1.Pod:
 		err = m.onPodEvent(evt)
+	case *corev1.PersistentVolumeClaim:
+		err = m.onPersistentVolumeClaimEvent(evt)
 	case *volumesnapshotv1.VolumeSnapshot:
 		err = m.onVolumesnapshotEvent(evt)
 	}
@@ -167,6 +169,38 @@ func (m *Monitor) handleEvent(evt watch.Event) {
 	if err != nil {
 		m.OnError(err)
 	}
+}
+
+func (m *Monitor) onPersistentVolumeClaimEvent(evt watch.Event) error {
+	pvc, ok := evt.Object.(*corev1.PersistentVolumeClaim)
+	if !ok {
+		return xerrors.Errorf("received non-persistent-volume-claim event")
+	}
+
+	log := log.WithField("pvc", pvc.Name)
+	if pvc.Labels["component"] != "workspace" {
+		// The PVC not belongs to workspace Pod
+		return nil
+	}
+
+	// the pod name is 1:1 mapping to pvc name
+	podName := pvc.Name
+	log = log.WithField("pod", podName)
+
+	// check if it's a orphan PVC belongs to workspace Pod
+	var pod corev1.Pod
+	err := m.manager.Clientset.Get(context.Background(), types.NamespacedName{Namespace: pvc.Namespace, Name: podName}, &pod)
+	if err == nil {
+		return nil
+	} else if !k8serr.IsNotFound(err) {
+		log.WithError(err).Errorf("cannot get pod %s/%s", podName, pvc.Namespace)
+		return err
+	}
+
+	// Orphan PVC detected
+	log.Warnf("orphan pvc %s/%s detected", pvc.Name, pvc.Namespace)
+
+	return nil
 }
 
 func (m *Monitor) onVolumesnapshotEvent(evt watch.Event) error {

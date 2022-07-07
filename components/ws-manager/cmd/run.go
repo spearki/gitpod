@@ -200,6 +200,16 @@ var runCmd = &cobra.Command{
 			log.WithError(err).Fatal(err, "unable to create controller", "controller", "Pod")
 		}
 
+		err = (&manager.PersistentVolumeClaimReconciler{
+			Monitor: monitor,
+			Client:  mgr.GetClient(),
+			Log:     ctrl.Log.WithName("controllers").WithName("PersistentVolumeClaim"),
+			Scheme:  mgr.GetScheme(),
+		}).SetupWithManager(mgr)
+		if err != nil {
+			log.WithError(err).Fatal(err, "unable to create controller", "controller", "PersistentVolumeClaim")
+		}
+
 		// enable the volume snapshot controller when the VolumeSnapshot CRD exists
 		_, err = clientset.DiscoveryClient.ServerResourcesForGroupVersion(volumesnapshotv1.SchemeGroupVersion.String())
 		if err == nil {
