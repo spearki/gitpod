@@ -414,7 +414,7 @@ func runTask(ctx context.Context, termMuxSrv *terminal.MuxTerminalService, task 
 	if !ok {
 		log.Errorf("cannot obtain terminal for '%q'.", taskName)
 	} else {
-		term.PTY.Write([]byte(task + "; exit"))
+		term.PTY.Write([]byte(task + "; exit\n"))
 	}
 	stdout := term.Stdout.ListenWithOptions(terminal.TermListenOptions{
 		// ensure logging of entire task output
