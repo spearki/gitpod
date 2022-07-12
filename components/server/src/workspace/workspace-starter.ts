@@ -1230,6 +1230,12 @@ export class WorkspaceStarter {
             ev.setValue(JSON.stringify(tasks));
             envvars.push(ev);
         }
+        if (workspace.config.onWorkspaceStop) {
+            const ev = new EnvironmentVariable();
+            ev.setName("GITPOD_ON_WORKSPACE_STOP");
+            ev.setValue(workspace.config.onWorkspaceStop);
+            envvars.push(ev);
+        }
 
         const vsxRegistryUrl = new EnvironmentVariable();
         vsxRegistryUrl.setName("VSX_REGISTRY_URL");

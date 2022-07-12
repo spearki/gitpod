@@ -787,6 +787,7 @@ export interface WorkspaceConfig {
     image?: ImageConfig;
     ports?: PortConfig[];
     tasks?: TaskConfig[];
+    onWorkspaceStop?: string;
     checkoutLocation?: string;
     workspaceLocation?: string;
     gitConfig?: { [config: string]: string };

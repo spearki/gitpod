@@ -784,6 +784,7 @@ func (m *Manager) createWorkspaceEnvironment(startContext *startWorkspaceContext
 			case "GITPOD_WORKSPACE_CONTEXT",
 				"GITPOD_WORKSPACE_CONTEXT_URL",
 				"GITPOD_TASKS",
+				"GITPOD_ON_WORKSPACE_STOP",
 				"GITPOD_RESOLVED_EXTENSIONS",
 				"GITPOD_EXTERNAL_EXTENSIONS",
 				"GITPOD_IDE_ALIAS":

@@ -229,6 +229,9 @@ type WorkspaceConfig struct {
 	// GitpodTasks is the task configuration of the workspace
 	GitpodTasks string `env:"GITPOD_TASKS"`
 
+	// GitpodOnWorkspaceStop will be executed before a workspace stops.
+	GitpodOnWorkspaceStop string `env:"GITPOD_ON_WORKSPACE_STOP"`
+
 	// GitpodHeadless controls whether the workspace is running headless
 	GitpodHeadless string `env:"GITPOD_HEADLESS"`
 

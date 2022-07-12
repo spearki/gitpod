@@ -59,6 +59,10 @@
                 "additionalProperties": false
             }
         },
+        "onWorkspaceStop": {
+            "type": "string",
+            "description": "A shell command to run before a workspace stops. This command needs to finish with 15 seconds and will be force killed if it runs longer."
+        },
         "tasks": {
             "type": "array",
             "description": "List of tasks to run on start. Each task will open a terminal in the IDE.",
