@@ -7,7 +7,7 @@
 import * as chai from "chai";
 const expect = chai.expect;
 import { suite, test } from "mocha-typescript";
-import { oneMonthLater } from "./timeutil";
+import { daysEarlier, oneMonthLater } from "./timeutil";
 
 @suite()
 export class TimeutilSpec {
@@ -38,5 +38,26 @@ export class TimeutilSpec {
     isOneMonthLater(from: Date, day: number, expectation: Date) {
         const later = oneMonthLater(from.toISOString(), day);
         expect(later, `expected ${later} to be equal ${expectation}`).to.be.equal(expectation.toISOString());
+    }
+
+    @test
+    testDaysEarlier() {
+        const tests: { date: Date; daysEarlier: number; expectation: string }[] = [
+            {
+                date: new Date("2021-07-13T00:00:00.000Z"),
+                daysEarlier: 365,
+                expectation: "2020-07-13T00:00:00.000Z",
+            },
+            {
+                date: new Date("2019-02-01T00:00:00.000Z"),
+                daysEarlier: 365,
+                expectation: "2018-02-01T00:00:00.000Z",
+            },
+        ];
+
+        for (const t of tests) {
+            const actual = daysEarlier(t.date, t.daysEarlier);
+            expect(actual.toISOString()).to.equal(t.expectation, `expected ${actual} to be equal ${t.expectation}`);
+        }
     }
 }

@@ -47,6 +47,12 @@ export const orderAsc = (d1: string, d2: string): number => liftDate(d1, d2, (d1
 export const liftDate1 = <T>(d1: string, f: (d1: Date) => T): T => f(new Date(d1));
 export const liftDate = <T>(d1: string, d2: string, f: (d1: Date, d2: Date) => T): T => f(new Date(d1), new Date(d2));
 
+export const daysEarlier = (fromDate: Date, days: number): Date => {
+    const t1 = new Date(fromDate.getTime());
+    t1.setUTCDate(t1.getDate() - days);
+    return t1;
+};
+
 export function hoursBefore(date: string, hours: number): string {
     const result = new Date(date);
     result.setHours(result.getHours() - hours);
