@@ -211,9 +211,14 @@ func renderKubernetesObjects(cfgVersion string, cfg *configv1.Config) ([]string,
 		return nil, err
 	}
 
+	postProcessed, err := common.PostProcess(sortedObjs)
+	if err != nil {
+		return nil, err
+	}
+
 	// output the YAML to stdout
 	output := make([]string, 0)
-	for _, c := range sortedObjs {
+	for _, c := range postProcessed {
 		output = append(output, fmt.Sprintf("---\n# %s/%s %s\n%s", c.TypeMeta.APIVersion, c.TypeMeta.Kind, c.Metadata.Name, c.Content))
 	}
 
