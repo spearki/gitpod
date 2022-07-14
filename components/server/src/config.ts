@@ -49,6 +49,9 @@ export interface WorkspaceGarbageCollection {
     disabled: boolean;
     startDate: number;
 
+    /** The number of seconds between a run and the next */
+    intervalSeconds: number;
+
     /** The maximum amount of workspaces that are marked as 'softDeleted' in one go */
     chunkLimit: number;
 

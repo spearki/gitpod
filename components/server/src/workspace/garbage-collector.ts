@@ -34,7 +34,10 @@ export class WorkspaceGarbageCollector {
                 dispose: () => {},
             };
         }
-        return repeat(async () => this.garbageCollectWorkspacesIfLeader(), 30 * 60 * 1000);
+        return repeat(
+            async () => this.garbageCollectWorkspacesIfLeader(),
+            this.config.workspaceGarbageCollection.intervalSeconds * 1000,
+        );
     }
 
     public async garbageCollectWorkspacesIfLeader() {

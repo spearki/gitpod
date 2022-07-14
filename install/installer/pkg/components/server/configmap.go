@@ -179,6 +179,7 @@ func configmap(ctx *common.RenderContext) ([]runtime.Object, error) {
 		GitHubApp:            githubApp,
 		WorkspaceGarbageCollection: WorkspaceGarbageCollection{
 			Disabled:                   disableWsGarbageCollection,
+			IntervalSeconds:            1800,
 			MinAgeDays:                 14,
 			MinAgePrebuildDays:         7,
 			ChunkLimit:                 1000,
