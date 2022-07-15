@@ -40,7 +40,6 @@ function FeedbackComponent(props: {
                 error_rendered: props.isError ? props.error_rendered : undefined,
             };
             trackEvent("feedback_submitted", feedbackObj);
-            console.log("error: ", props.error_rendered.message);
         }
 
         setIsFeedbackSubmitted(true);
