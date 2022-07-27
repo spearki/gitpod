@@ -208,11 +208,20 @@ func init() {
 
 // FromDockerConfig turns docker client config into docker registry hosts
 func authorizerFromDockerConfig(cfg *configfile.ConfigFile) docker.Authorizer {
+	// return &dockerAuthorizer{
+	// 	credentials:         ao.credentials, <- here
+	// 	client:              ao.client,
+	// 	header:              ao.header,
+	// 	handlers:            make(map[string]*authHandler),
+	// 	onFetchRefreshToken: ao.onFetchRefreshToken,
+	// }
 	return docker.NewDockerAuthorizer(docker.WithAuthCreds(func(host string) (user, pass string, err error) {
 		auth, err := cfg.GetAuthConfig(host)
 		if err != nil {
+			log.WithError(err).Info("failed to get a auth config")
 			return
 		}
+		log.Info("authorize info, host: %w, username: %w", host, auth.Username)
 		user = auth.Username
 		pass = auth.Password
 		return
