@@ -20,7 +20,7 @@ export const track = (w: Window) => {
 
 let pageCloseCompatibile: boolean = false
 
-isSaaSServerGreaterThan("main.4124").then((r) => {
+isSaaSServerGreaterThan("hw-hb-t.2").then((r) => {
     pageCloseCompatibile = r
 })
 
@@ -59,7 +59,9 @@ export function schedule(wsInfo: WorkspaceInfo, sessionId: string): void {
     }
 
     const workspacePageCloseCompatible = () => {
+        console.log('====================hwen.isSaaS', isSaaS)
         if (isSaaS) {
+            console.log('====================hwen.pageCloseCompatibile', pageCloseCompatibile)
             if (pageCloseCompatibile) {
                 beaconWorkspacePageClose();
             } else {

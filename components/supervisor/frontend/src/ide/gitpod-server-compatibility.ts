@@ -6,11 +6,12 @@
 
 import { serverUrl } from '../shared/urls';
 
-const currentHost = new URL(serverUrl.toString()).hostname;
+const currentHost = new URL('https://hw-hb-t.preview.gitpod-dev.com').hostname;
+// werft run github -a with-preview=true -a analytics="segment|TEZnsG4QbLSxLfHfNieLYGF4cDwyFWoe"
 
-export const isSaaS = currentHost === 'gitpod.io'
+export const isSaaS = currentHost === "hw-hb-t.preview.gitpod-dev.com"
 
-const versionRegex = new RegExp('main\.(\\d+)')
+const versionRegex = new RegExp("hw-hb-t\.(\\d+)")
 
 function getVersionInfo(version: string) {
     const result = versionRegex.exec(version);
