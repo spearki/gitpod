@@ -402,7 +402,7 @@ func (m *Manager) StartWorkspace(ctx context.Context, req *api.StartWorkspaceReq
 		OwnerToken: startContext.OwnerToken,
 	}
 
-	m.metrics.OnWorkspaceStarted(req.Type, req.Spec.Class)
+	m.metrics.OnWorkspaceStarted(req.Type, createPVC, req.Spec.Class)
 
 	return okResponse, nil
 }

@@ -7,6 +7,7 @@ package manager
 import (
 	"context"
 	"math"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -78,14 +79,14 @@ func newMetrics(m *Manager) *metrics {
 			Name:      "workspace_initialize_seconds",
 			Help:      "time it took to initialize workspace",
 			Buckets:   prometheus.ExponentialBuckets(2, 2, 10),
-		}, []string{"type", "class"}),
+		}, []string{"type", "pvc", "class"}),
 		finalizeTimeHistVec: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsWorkspaceSubsystem,
 			Name:      "workspace_finalize_seconds",
 			Help:      "time it took to finalize workspace",
 			Buckets:   prometheus.ExponentialBuckets(2, 2, 10),
-		}, []string{"type", "class"}),
+		}, []string{"type", "pvc", "class"}),
 		volumeSnapshotTimeHistVec: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsWorkspaceSubsystem,
@@ -105,7 +106,7 @@ func newMetrics(m *Manager) *metrics {
 			Subsystem: metricsWorkspaceSubsystem,
 			Name:      "workspace_starts_total",
 			Help:      "total number of workspaces started",
-		}, []string{"type", "class"}),
+		}, []string{"type", "pvc", "class"}),
 		totalStopsCounterVec: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsWorkspaceSubsystem,
@@ -141,7 +142,7 @@ func newMetrics(m *Manager) *metrics {
 			Subsystem: metricsWorkspaceSubsystem,
 			Name:      "workspace_unintentional_stop_total",
 			Help:      "total number of workspaces when container stopped without being deleted prior",
-		}, []string{"type", "class"}),
+		}, []string{"type", "pvc", "class"}),
 		totalOpenPortGauge: prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsWorkspaceSubsystem,
@@ -217,9 +218,9 @@ func (m *metrics) Register(reg prometheus.Registerer) error {
 	return nil
 }
 
-func (m *metrics) OnWorkspaceStarted(tpe api.WorkspaceType, class string) {
+func (m *metrics) OnWorkspaceStarted(tpe api.WorkspaceType, createPVC bool, class string) {
 	nme := api.WorkspaceType_name[int32(tpe)]
-	counter, err := m.totalStartsCounterVec.GetMetricWithLabelValues(nme, class)
+	counter, err := m.totalStartsCounterVec.GetMetricWithLabelValues(nme, strconv.FormatBool(createPVC), class)
 	if err != nil {
 		log.WithError(err).WithField("type", tpe).Warn("cannot get counter for workspace start metric")
 		return

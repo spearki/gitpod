@@ -908,7 +908,7 @@ func (m *Monitor) initializeWorkspaceContent(ctx context.Context, pod *corev1.Po
 	}
 	wsType := strings.ToUpper(pod.Labels[wsk8s.TypeLabel])
 	wsClass := pod.Labels[workspaceClassLabel]
-	hist, errHist := m.manager.metrics.initializeTimeHistVec.GetMetricWithLabelValues(wsType, wsClass)
+	hist, errHist := m.manager.metrics.initializeTimeHistVec.GetMetricWithLabelValues(wsType, strconv.FormatBool(pvcFeatureEnabled), wsClass)
 	if errHist != nil {
 		log.WithError(errHist).WithField("type", wsType).Warn("cannot get initialize time histogram metric")
 	} else {
@@ -1307,7 +1307,7 @@ func (m *Monitor) finalizeWorkspaceContent(ctx context.Context, wso *workspaceOb
 		break
 	}
 
-	hist, err := m.manager.metrics.finalizeTimeHistVec.GetMetricWithLabelValues(wsType, wso.Pod.Labels[workspaceClassLabel])
+	hist, err := m.manager.metrics.finalizeTimeHistVec.GetMetricWithLabelValues(wsType, strconv.FormatBool(pvcFeatureEnabled), wso.Pod.Labels[workspaceClassLabel])
 	if err != nil {
 		log.WithError(err).WithField("type", wsType).Warn("cannot get finalize time histogram metric")
 	} else {

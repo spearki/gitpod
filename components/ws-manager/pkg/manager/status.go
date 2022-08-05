@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -586,9 +587,10 @@ func extractFailure(wso workspaceObjects, metrics *metrics) (string, *api.Worksp
 				// container terminated successfully - this is not a failure
 				if !isPodBeingDeleted(pod) {
 					wsType := strings.ToUpper(pod.Labels[wsk8s.TypeLabel])
+					_, pvcFeatureEnabled := pod.Labels[pvcWorkspaceFeatureLabel]
 					wsClass := pod.Labels[workspaceClassLabel]
 					if metrics != nil && !wso.IsWorkspaceHeadless() {
-						metrics.totalUnintentionalWorkspaceStopCounterVec.WithLabelValues(wsType, wsClass).Inc()
+						metrics.totalUnintentionalWorkspaceStopCounterVec.WithLabelValues(wsType, strconv.FormatBool(pvcFeatureEnabled), wsClass).Inc()
 					}
 				}
 				return "", nil
