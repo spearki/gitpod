@@ -151,7 +151,7 @@ func RunInitializer(ctx context.Context, destination string, initializer *csapi.
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpdir)
+	// defer os.RemoveAll(tmpdir)
 
 	err = os.MkdirAll(filepath.Join(tmpdir, "rootfs"), 0755)
 	if err != nil {
