@@ -10,7 +10,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 
-	"github.com/gitpod-io/gitpod/common-go/log"
 	"github.com/gitpod-io/gitpod/common-go/tracing"
 	csapi "github.com/gitpod-io/gitpod/content-service/api"
 	"github.com/gitpod-io/gitpod/content-service/pkg/archive"
@@ -28,24 +27,24 @@ type SnapshotInitializer struct {
 // Run downloads a snapshot from a remote storage
 func (s *SnapshotInitializer) Run(ctx context.Context, mappings []archive.IDMapping) (src csapi.WorkspaceInitSource, err error) {
 	//nolint:ineffassign
-	span, ctx := opentracing.StartSpanFromContext(ctx, "SnapshotInitializer")
+	span, _ := opentracing.StartSpanFromContext(ctx, "SnapshotInitializer")
 	span.SetTag("snapshot", s.Snapshot)
 	defer tracing.FinishSpan(span, &err)
 
 	src = csapi.WorkspaceInitFromBackup
+	return src, xerrors.Errorf("mock snapshot initializer error")
+	// if s.FromVolumeSnapshot {
+	// 	log.Info("SnapshotInitializer detected volume snapshot, skipping")
+	// 	return src, nil
+	// }
 
-	if s.FromVolumeSnapshot {
-		log.Info("SnapshotInitializer detected volume snapshot, skipping")
-		return src, nil
-	}
+	// ok, err := s.Storage.DownloadSnapshot(ctx, s.Location, s.Snapshot, mappings)
+	// if err != nil {
+	// 	return src, xerrors.Errorf("snapshot initializer: %w", err)
+	// }
+	// if !ok {
+	// 	return src, xerrors.Errorf("did not find snapshot %s", s.Snapshot)
+	// }
 
-	ok, err := s.Storage.DownloadSnapshot(ctx, s.Location, s.Snapshot, mappings)
-	if err != nil {
-		return src, xerrors.Errorf("snapshot initializer: %w", err)
-	}
-	if !ok {
-		return src, xerrors.Errorf("did not find snapshot %s", s.Snapshot)
-	}
-
-	return
+	// return
 }
