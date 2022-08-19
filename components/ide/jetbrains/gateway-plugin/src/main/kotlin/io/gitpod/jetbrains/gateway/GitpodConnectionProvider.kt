@@ -47,9 +47,11 @@ import javax.swing.JComponent
 import javax.swing.JLabel
 import kotlin.coroutines.coroutineContext
 
+class GitpodConnection(val gitpodHost: String, val workspaceId: String, val backendPort: String?) {}
+
 @Suppress("UnstableApiUsage", "OPT_IN_USAGE")
 class GitpodConnectionProvider : GatewayConnectionProvider {
-
+    private val activeConnections = mutableListOf<GitpodConnection>()
     private val gitpod = service<GitpodConnectionService>()
 
     private val httpClient = HttpClient.newBuilder()
@@ -74,6 +76,18 @@ class GitpodConnectionProvider : GatewayConnectionProvider {
             parameters["workspaceId"]!!,
             parameters["backendPort"]
         )
+
+        val existingConnection = activeConnections.find {
+            it.gitpodHost == parameters["gitpodHost"] && it.workspaceId == parameters["workspaceId"] && it.backendPort == parameters["backendPort"]
+        }
+
+        if (existingConnection != null) {
+            thisLogger().warn("THE CONNECTION ALREADY EXISTS!!")
+            throw IllegalArgumentException("THE CONNECTION ALREADY EXISTS!!")
+        } else {
+            thisLogger().warn("NEW CONNECTION!!!!!")
+        }
+
         val client = gitpod.obtainClient(connectParams.gitpodHost)
         val connectionLifetime = Lifetime.Eternal.createNested()
         val updates = client.listenToWorkspace(connectionLifetime, connectParams.workspaceId)
@@ -230,6 +244,12 @@ class GitpodConnectionProvider : GatewayConnectionProvider {
                                         setErrorMessage("failed to fetch JetBrains Gateway Join Link.")
                                         return@launch
                                     }
+
+                                    // TODO: is this the right place?
+                                    val newConnection = GitpodConnection(connectParams.gitpodHost, connectParams.workspaceId, connectParams.backendPort)
+                                    activeConnections.add(newConnection)
+                                    thisLogger().warn("Storing connection for ${connectParams.gitpodHost} - ${connectParams.workspaceId} - ${connectParams.backendPort}")
+
                                     val connector = ClientOverSshTunnelConnector(
                                         connectionLifetime,
                                         SshHostTunnelConnector(credentials),
@@ -239,6 +259,7 @@ class GitpodConnectionProvider : GatewayConnectionProvider {
                                     clientHandle.clientClosed.advise(connectionLifetime) {
                                         application.invokeLater {
                                             connectionLifetime.terminate()
+                                            // todo: remove this connection from activeConnections
                                         }
                                     }
                                     clientHandle.onClientPresenceChanged.advise(connectionLifetime) {
