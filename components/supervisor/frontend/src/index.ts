@@ -10,9 +10,38 @@
  */
 import { IDEMetricsServiceClient, MetricsName } from "./ide/ide-metrics-service-client";
 IDEMetricsServiceClient.addCounter(MetricsName.SupervisorFrontendClientTotal).catch(() => {})
-window.addEventListener('error', () => {
-    IDEMetricsServiceClient.addCounter(MetricsName.SupervisorFrontendErrorTotal).catch(() => {})
-})
+
+//#region supervisor frontend error capture
+declare global {
+    interface Window {
+        gitpodMetricsSupervisorFrontendErrorTotal(labels?: Map<string, string>): Promise<void>;
+    }
+}
+
+// Add this for other clients, i.e. openvscode-server
+window.gitpodMetricsSupervisorFrontendErrorTotal = async (labels?: Map<string, string>) => {
+    IDEMetricsServiceClient.addCounter(MetricsName.SupervisorFrontendErrorTotal, labels)
+}
+
+window.addEventListener('error', (event) => {
+
+    const flags = new Map();
+
+    //@ts-ignore We take a look at what is the resource that was attempted to load;
+    const resourceSource = event?.target?.getAttribute('src') || event?.target?.getAttribute('href');
+
+    // If the event has a `target`, it means that it wasn't a script error
+    if (resourceSource) {
+        if (resourceSource.match(new RegExp(/\/build\/ide\/code:.+\/__files__\//g))) {
+            flags.set('resource', 'vscode-web-workbench');
+        }
+        flags.set('error', 'load_error');
+    }
+
+    IDEMetricsServiceClient.addCounter(MetricsName.SupervisorFrontendErrorTotal, flags).catch(() => {});
+});
+//#endregion
+
 require('../src/shared/index.css');
 
 import { createGitpodService, WorkspaceInstancePhase } from "@gitpod/gitpod-protocol";
