@@ -3681,7 +3681,22 @@ data:
           {
             "name": "gitpod_supervisor_frontend_client_total",
             "help": "Total count of supervisor frontend client",
-            "labels": null
+            "labels": [
+              {
+                "name": "resource",
+                "allowValues": [
+                  "vscode-web-workbench"
+                ],
+                "defaultValue": "unknown"
+              },
+              {
+                "name": "error",
+                "allowValues": [
+                  "load_error"
+                ],
+                "defaultValue": "unknown"
+              }
+            ]
           }
         ],
         "histogramMetrics": []
@@ -7778,7 +7793,7 @@ spec:
   template:
     metadata:
       annotations:
-        gitpod.io/checksum_config: 429b9479c206dc66164883793af80586bca4017bb59e108fa7501a530d24ef57
+        gitpod.io/checksum_config: 603ab874f874273a0a04bd1ea6dae6768ed164e1ed5559dca0151c20ca95348b
       creationTimestamp: null
       labels:
         app: gitpod

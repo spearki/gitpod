@@ -24,6 +24,22 @@ func configmap(ctx *common.RenderContext) ([]runtime.Object, error) {
 		{
 			Name: "gitpod_supervisor_frontend_client_total",
 			Help: "Total count of supervisor frontend client",
+			Labels: []config.LabelAllowList{
+				{
+					Name: "resource",
+					AllowValues: []string{
+						"vscode-web-workbench",
+					},
+					DefaultValue: "unknown",
+				},
+				{
+					Name: "error",
+					AllowValues: []string{
+						"load_error",
+					},
+					DefaultValue: "unknown",
+				},
+			},
 		},
 	}
 	histogramMetrics := []config.HistogramMetricsConfiguration{}
