@@ -42,14 +42,24 @@ func TestDeployment_ServerArguments(t *testing.T) {
 		`--json-log=true`,
 	}, apiContainer.Args)
 
-	require.Equal(t, []corev1.Volume{{
-		Name: configmapVolume,
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: Component,
+	require.Equal(t, []corev1.Volume{
+		{
+			Name: configmapVolume,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: Component,
+					},
 				},
 			},
 		},
-	}}, dpl.Spec.Template.Spec.Volumes, "must bind config as a volume")
+		{
+			Name: "stripe-secret",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "stripe-webhook-secret",
+				},
+			},
+		},
+	}, dpl.Spec.Template.Spec.Volumes, "must bind config as a volume")
 }
