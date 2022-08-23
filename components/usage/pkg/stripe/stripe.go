@@ -91,6 +91,76 @@ func (c *Client) UpdateUsage(ctx context.Context, creditsPerTeam map[string]int6
 	return nil
 }
 
+func (c *Client) FindCustomerByTeamID(ctx context.Context, teamID string) (*stripe.Customer, error) {
+	query := fmt.Sprintf("metadata['teamId']:'%s'", teamID)
+
+	params := &stripe.CustomerSearchParams{
+		SearchParams: stripe.SearchParams{
+			Query:   query,
+			Expand:  []*string{stripe.String("data.subscriptions")},
+			Context: ctx,
+		},
+	}
+	iter := c.sc.Customers.Search(params)
+
+	if iter.Err() != nil {
+		return nil, fmt.Errorf("failed to search for customer by team ID %s: %w", teamID, iter.Err())
+	}
+
+	var customers []*stripe.Customer
+	for iter.Next() {
+		customers = append(customers, iter.Customer())
+	}
+
+	if len(customers) == 0 {
+		return nil, fmt.Errorf("did not find any customer with team ID: %s", teamID)
+	}
+
+	if len(customers) > 1 {
+		return nil, fmt.Errorf("found multiple customers with team ID: %s", teamID)
+	}
+
+	return customers[0], nil
+}
+
+func (c *Client) ListDraftInvoices(ctx context.Context, customerID string) ([]*stripe.Invoice, error) {
+	if customerID == "" {
+		return nil, fmt.Errorf("customer ID is a required parameter")
+	}
+
+	iterator := c.sc.Invoices.List(&stripe.InvoiceListParams{
+		ListParams: stripe.ListParams{
+			Context: ctx,
+		},
+		Customer: stripe.String(customerID),
+		Status:   stripe.String(string(stripe.InvoiceStatusDraft)),
+	})
+	if err := iterator.Err(); err != nil {
+		return nil, fmt.Errorf("failed to list invoices: %w", err)
+	}
+
+	var invoices []*stripe.Invoice
+	for iterator.Next() {
+		invoices = append(invoices, iterator.Invoice())
+	}
+
+	return invoices, nil
+}
+
+func (c *Client) UpdateInvoiceMetadata(ctx context.Context, invoiceID string, metadata map[string]string) (*stripe.Invoice, error) {
+	invoice, err := c.sc.Invoices.Update(invoiceID, &stripe.InvoiceParams{
+		Params: stripe.Params{
+			Context:  ctx,
+			Metadata: metadata,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update invoice metadata: %w", err)
+	}
+
+	return invoice, nil
+}
+
 func (c *Client) updateUsageForCustomer(ctx context.Context, customer *stripe.Customer, credits int64) (*UsageRecord, error) {
 	subscriptions := customer.Subscriptions.Data
 	if len(subscriptions) != 1 {

@@ -37,11 +37,18 @@ type BillingService struct {
 }
 
 func (s *BillingService) UpdateInvoices(ctx context.Context, in *v1.UpdateInvoicesRequest) (*v1.UpdateInvoicesResponse, error) {
+	reportID := in.GetReportId()
+	if reportID == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "missing report id")
+	}
+
 	credits, err := s.creditSummaryForTeams(in.GetSessions())
 	if err != nil {
 		log.Log.WithError(err).Errorf("Failed to compute credit summary.")
 		return nil, status.Errorf(codes.InvalidArgument, "failed to compute credit summary")
 	}
+
+	invoices, err := s.stripeClient.ListDraftInvoices(ctx)
 
 	err = s.stripeClient.UpdateUsage(ctx, credits)
 	if err != nil {
