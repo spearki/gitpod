@@ -6,7 +6,10 @@ package cmd
 import (
 	"path/filepath"
 
+	"github.com/gitpod-io/gitpod/common-go/log"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -26,4 +29,20 @@ func init() {
 
 	configClusterCmd.Flags().StringVar(&configClusterOpts.Kube.Config, "kubeconfig", filepath.Join(homedir.HomeDir(), ".kube", "config"), "path to the kubeconfig file")
 	configClusterCmd.Flags().StringVarP(&configClusterOpts.Namespace, "namespace", "n", getEnv("NAMESPACE", "default"), "namespace to deploy to")
+}
+
+func authClusterOrKubeconfig(kubeconfig string) (*rest.Config, error) {
+	// Try authenticating in-cluster with serviceaccount
+	log.Debug("Attempting to authenticate with ServiceAccount")
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		// Try authenticating out-of-cluster with kubeconfig
+		log.Debug("ServiceAccount failed - using KubeConfig")
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return config, nil
 }
