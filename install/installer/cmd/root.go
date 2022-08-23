@@ -71,3 +71,10 @@ func checkKubeConfig(kube *kubeConfig) error {
 
 	return nil
 }
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
