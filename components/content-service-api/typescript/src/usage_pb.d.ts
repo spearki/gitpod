@@ -51,3 +51,43 @@ export namespace UsageReportUploadURLResponse {
         url: string,
     }
 }
+
+export class GetDownloadURLRequest extends jspb.Message {
+    getName(): string;
+    setName(value: string): GetDownloadURLRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetDownloadURLRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetDownloadURLRequest): GetDownloadURLRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetDownloadURLRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetDownloadURLRequest;
+    static deserializeBinaryFromReader(message: GetDownloadURLRequest, reader: jspb.BinaryReader): GetDownloadURLRequest;
+}
+
+export namespace GetDownloadURLRequest {
+    export type AsObject = {
+        name: string,
+    }
+}
+
+export class GetDownloadURLResponse extends jspb.Message {
+    getUrl(): string;
+    setUrl(value: string): GetDownloadURLResponse;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetDownloadURLResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetDownloadURLResponse): GetDownloadURLResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetDownloadURLResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetDownloadURLResponse;
+    static deserializeBinaryFromReader(message: GetDownloadURLResponse, reader: jspb.BinaryReader): GetDownloadURLResponse;
+}
+
+export namespace GetDownloadURLResponse {
+    export type AsObject = {
+        url: string,
+    }
+}

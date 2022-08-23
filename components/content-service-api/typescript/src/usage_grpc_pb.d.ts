@@ -15,6 +15,7 @@ import * as usage_pb from "./usage_pb";
 
 interface IUsageReportServiceService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     uploadURL: IUsageReportServiceService_IUploadURL;
+    getDownloadURL: IUsageReportServiceService_IGetDownloadURL;
 }
 
 interface IUsageReportServiceService_IUploadURL extends grpc.MethodDefinition<usage_pb.UsageReportUploadURLRequest, usage_pb.UsageReportUploadURLResponse> {
@@ -26,17 +27,30 @@ interface IUsageReportServiceService_IUploadURL extends grpc.MethodDefinition<us
     responseSerialize: grpc.serialize<usage_pb.UsageReportUploadURLResponse>;
     responseDeserialize: grpc.deserialize<usage_pb.UsageReportUploadURLResponse>;
 }
+interface IUsageReportServiceService_IGetDownloadURL extends grpc.MethodDefinition<usage_pb.GetDownloadURLRequest, usage_pb.GetDownloadURLResponse> {
+    path: "/contentservice.UsageReportService/GetDownloadURL";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<usage_pb.GetDownloadURLRequest>;
+    requestDeserialize: grpc.deserialize<usage_pb.GetDownloadURLRequest>;
+    responseSerialize: grpc.serialize<usage_pb.GetDownloadURLResponse>;
+    responseDeserialize: grpc.deserialize<usage_pb.GetDownloadURLResponse>;
+}
 
 export const UsageReportServiceService: IUsageReportServiceService;
 
 export interface IUsageReportServiceServer extends grpc.UntypedServiceImplementation {
     uploadURL: grpc.handleUnaryCall<usage_pb.UsageReportUploadURLRequest, usage_pb.UsageReportUploadURLResponse>;
+    getDownloadURL: grpc.handleUnaryCall<usage_pb.GetDownloadURLRequest, usage_pb.GetDownloadURLResponse>;
 }
 
 export interface IUsageReportServiceClient {
     uploadURL(request: usage_pb.UsageReportUploadURLRequest, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
     uploadURL(request: usage_pb.UsageReportUploadURLRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
     uploadURL(request: usage_pb.UsageReportUploadURLRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
+    getDownloadURL(request: usage_pb.GetDownloadURLRequest, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
+    getDownloadURL(request: usage_pb.GetDownloadURLRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
+    getDownloadURL(request: usage_pb.GetDownloadURLRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class UsageReportServiceClient extends grpc.Client implements IUsageReportServiceClient {
@@ -44,4 +58,7 @@ export class UsageReportServiceClient extends grpc.Client implements IUsageRepor
     public uploadURL(request: usage_pb.UsageReportUploadURLRequest, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
     public uploadURL(request: usage_pb.UsageReportUploadURLRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
     public uploadURL(request: usage_pb.UsageReportUploadURLRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: usage_pb.UsageReportUploadURLResponse) => void): grpc.ClientUnaryCall;
+    public getDownloadURL(request: usage_pb.GetDownloadURLRequest, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
+    public getDownloadURL(request: usage_pb.GetDownloadURLRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
+    public getDownloadURL(request: usage_pb.GetDownloadURLRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: usage_pb.GetDownloadURLResponse) => void): grpc.ClientUnaryCall;
 }
