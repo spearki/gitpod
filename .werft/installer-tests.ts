@@ -16,7 +16,6 @@ const kotsApp: string = annotations.replicatedApp || "gitpod";
 
 const version: string = annotations.version || "-";
 const preview: string = annotations.preview || "false"; // setting to true will not destroy the setup
-const customerID: string = annotations.customerID || "";
 const upgrade: string = annotations.upgrade || "false"; // setting to true will not KOTS upgrade to the latest version. Set the channel to beta or stable in this case.
 const skipTests: string = annotations.skipTests || "false"; // setting to true skips the integration tests
 const deps: string = annotations.deps || ""; // options: ["external", "internal"] setting to `external` will ensure that all resource dependencies(storage, db, registry) will be external. if unset, a random selection will be used
@@ -267,7 +266,6 @@ if (config === undefined) {
 
 installerTests(TEST_CONFIGURATIONS[testConfig]).catch((err) => {
     cleanup();
-    deleteReplicatedLicense(werft, customerID);
     console.error(err);
     process.exit(1);
 });
@@ -422,11 +420,11 @@ function randK8sVersion(config: string): string {
             break;
         }
         case "STANDARD_AKS_TEST": {
-            options = ["1.21", "1.22", "1.23"]
+            options = ["1.22", "1.23", "1.24"]
             break;
         }
         case "STANDARD_EKS_TEST": {
-            options = ["1.21", "1.22", "1.23"]
+            options = ["1.21", "1.22"]
             break;
         }
         case "STANDARD_K3S_TEST": {
@@ -478,6 +476,8 @@ function cleanup() {
     }
 
     werft.done(phase.phase);
+
+    deleteReplicatedLicense(werft, process.env["TF_VAR_TEST_ID"]);
 
     return ret;
 }

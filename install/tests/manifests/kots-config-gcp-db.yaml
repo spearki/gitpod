@@ -9,7 +9,7 @@ spec:
         value: "1"
         data: "db_cloudsql_enabled"
       db_cloudsql_instance:
-        value: sh-automated-tests:europe-west1:sql-${TF_VAR_TEST_ID}
+        value: "${DB_INSTANCE}"
         data: "db_cloudsql_instance"
       db_gcp_credentials:
         value: "${BASE64_GCP_KEY}"
@@ -18,5 +18,5 @@ spec:
         value: gitpod
         data: "db_username"
       db_password:
-        value: gitpod
+        value: ${DB_PASSWORD}
         data: "db_password"
