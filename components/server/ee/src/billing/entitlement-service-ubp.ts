@@ -4,7 +4,7 @@
  * See License-AGPL.txt in the project root for license information.
  */
 
-import { UserDB } from "@gitpod/gitpod-db/lib";
+import { TeamDB, UserDB } from "@gitpod/gitpod-db/lib";
 import {
     User,
     WorkspaceInstance,
@@ -20,6 +20,7 @@ import {
     MayStartWorkspaceResult,
 } from "../../../src/billing/entitlement-service";
 import { Config } from "../../../src/config";
+import { StripeService } from "../user/stripe-service";
 import { BillingModes } from "./billing-mode";
 import { BillingService } from "./billing-service";
 
@@ -35,6 +36,8 @@ export class EntitlementServiceUBP implements EntitlementService {
     @inject(UserDB) protected readonly userDb: UserDB;
     @inject(BillingModes) protected readonly billingModes: BillingModes;
     @inject(BillingService) protected readonly billingService: BillingService;
+    @inject(StripeService) protected readonly stripeService: StripeService;
+    @inject(TeamDB) protected readonly teamDB: TeamDB;
 
     async mayStartWorkspace(
         user: User,
@@ -107,7 +110,30 @@ export class EntitlementServiceUBP implements EntitlementService {
     }
 
     protected async hasPaidSubscription(user: User, date: Date): Promise<boolean> {
-        // TODO(gpl) UBP personal: implement!
-        return true;
+        // Member of paid team?
+        const teams = await this.teamDB.findTeamsByUser(user.id);
+        const teamSubscriptionIds = [];
+        await Promise.all(
+            teams.map(async (team) => {
+                const customer = await this.stripeService.findCustomerByTeamId(team.id);
+                if (!customer) {
+                    return;
+                }
+                const subscriptionId = await this.stripeService.findUncancelledSubscriptionByCustomer(customer.id);
+                if (subscriptionId) {
+                    teamSubscriptionIds.push(subscriptionId);
+                }
+            }),
+        );
+        if (teamSubscriptionIds.length > 0) {
+            return true;
+        }
+        // Paid user?
+        const customer = await this.stripeService.findCustomerByUserId(user.id);
+        if (!customer) {
+            return false;
+        }
+        const subscriptionId = await this.stripeService.findUncancelledSubscriptionByCustomer(customer.id);
+        return !!subscriptionId;
     }
 }
