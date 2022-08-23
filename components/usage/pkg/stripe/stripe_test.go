@@ -5,7 +5,9 @@
 package stripe
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -82,4 +84,26 @@ func TestCustomerQueriesForTeamIds_MultipleQueries(t *testing.T) {
 			require.Equal(t, tc.ExpectedNumberOfQueries, len(actualQueries))
 		})
 	}
+}
+
+func TestGetUpcomingInvoice(t *testing.T) {
+	secretKey := os.Getenv("TEST_KEY_STRIPE")
+	teamId := os.Getenv("TEST_TEAM_ID")
+
+	if secretKey == "" || teamId == "" {
+		t.Skip("Skipping because of missing EnvVars: TEST_TEAM_ID, TEST_KEY_STRIPE")
+		return
+	}
+
+	c, err := New(ClientConfig{
+		SecretKey: secretKey,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	invoice, err := c.GetUpcomingInvoice(context.Background(), teamId)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(invoice.Credits)
 }

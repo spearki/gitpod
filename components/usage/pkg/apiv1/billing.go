@@ -58,6 +58,21 @@ func (s *BillingService) FinalizeInvoice(ctx context.Context, in *v1.FinalizeInv
 	return &v1.FinalizeInvoiceResponse{}, nil
 }
 
+func (s *BillingService) GetUpcomingInvoice(ctx context.Context, in *v1.GetUpcomingInvoiceRequest) (*v1.GetUpcomingInvoiceResponse, error) {
+	invoice, err := s.stripeClient.GetUpcomingInvoice(ctx, in.GetTeamId())
+	if err != nil {
+		log.Log.WithError(err).Errorf("Failed to fetch upcoming invoice from stripe.")
+		return nil, status.Errorf(codes.Internal, "failed to fetcht upcoming invoice from stripe")
+	}
+
+	return &v1.GetUpcomingInvoiceResponse{
+		InvoiceId: invoice.ID,
+		Currency:  invoice.Currency,
+		Amount:    float64(invoice.Amount),
+		Credits:   invoice.Credits,
+	}, nil
+}
+
 func (s *BillingService) creditSummaryForTeams(sessions []*v1.BilledSession) (map[string]int64, error) {
 	creditsPerTeamID := map[string]float64{}
 

@@ -10,7 +10,13 @@ import { TraceContext } from "@gitpod/gitpod-protocol/lib/util/tracing";
 import * as opentracing from "opentracing";
 import { Metadata } from "@grpc/grpc-js";
 import { BilledSession, ListBilledUsageRequest, ListBilledUsageResponse } from "./usage_pb";
-import { SetBilledSessionRequest, SetBilledSessionResponse, System } from "./billing_pb";
+import {
+    GetUpcomingInvoiceRequest,
+    GetUpcomingInvoiceResponse,
+    SetBilledSessionRequest,
+    SetBilledSessionResponse,
+    System,
+} from "./billing_pb";
 import { injectable, inject, optional } from "inversify";
 import { createClientCallMetricsInterceptor, IClientCallMetrics } from "@gitpod/gitpod-protocol/lib/util/grpc";
 import * as grpc from "@grpc/grpc-js";
@@ -253,5 +259,24 @@ export class PromisifiedBillingServiceClient {
         return {
             interceptors: this.interceptor,
         };
+    }
+
+    public async getUpcomingInvoice(teamId: string) {
+        const req = new GetUpcomingInvoiceRequest();
+        req.setTeamId(teamId);
+
+        const response = await new Promise<GetUpcomingInvoiceResponse>((resolve, reject) => {
+            this.client.getUpcomingInvoice(
+                req,
+                (err: grpc.ServiceError | null, response: GetUpcomingInvoiceResponse) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    resolve(response);
+                },
+            );
+        });
+        return response;
     }
 }

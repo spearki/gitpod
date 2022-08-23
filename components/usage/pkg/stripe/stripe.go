@@ -50,6 +50,14 @@ type UsageRecord struct {
 	Quantity           int64
 }
 
+type StripeInvoice struct {
+	ID             string
+	SubscriptionID string
+	Amount         int64
+	Currency       string
+	Credits        int64
+}
+
 // UpdateUsage updates teams' Stripe subscriptions with usage data
 // `usageForTeam` is a map from team name to total workspace seconds used within a billing period.
 func (c *Client) UpdateUsage(ctx context.Context, creditsPerTeam map[string]int64) error {
@@ -119,6 +127,38 @@ func (c *Client) updateUsageForCustomer(ctx context.Context, customer *stripe.Cu
 	return &UsageRecord{
 		SubscriptionItemID: subscriptionItemId,
 		Quantity:           credits,
+	}, nil
+}
+
+// GetUpcomingInvoice fetches the upcoming invoice for the given team
+func (c *Client) GetUpcomingInvoice(ctx context.Context, teamId string) (*StripeInvoice, error) {
+	query := fmt.Sprintf("metadata['teamId']:'%s'", teamId)
+	searchParams := &stripe.CustomerSearchParams{
+		SearchParams: stripe.SearchParams{
+			Query:   query,
+			Expand:  []*string{stripe.String("data.subscriptions")},
+			Context: ctx,
+		},
+	}
+	iter := c.sc.Customers.Search(searchParams)
+	if !iter.Next() {
+		return nil, fmt.Errorf("failed to find customer data for team %s", teamId)
+	}
+	customer := iter.Customer()
+	invoiceParams := &stripe.InvoiceParams{
+		Customer: stripe.String(customer.ID),
+	}
+	invoice, err := c.sc.Invoices.GetNext(invoiceParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch the upcoming invoice for customer %s", customer.ID)
+	}
+
+	return &StripeInvoice{
+		ID:             invoice.ID,
+		SubscriptionID: invoice.Subscription.ID,
+		Amount:         invoice.AmountRemaining,
+		Currency:       string(invoice.Currency),
+		Credits:        invoice.Lines.Data[0].Quantity,
 	}, nil
 }
 
