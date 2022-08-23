@@ -144,6 +144,11 @@ pod:
         secretKeyRef:
           name: replicated
           key: token
+    - name: REPLICATED_APP
+      valueFrom:
+        secretKeyRef:
+          name: replicated
+          key: app
     command:
       - bash
       - -c

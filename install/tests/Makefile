@@ -7,7 +7,7 @@ TOPDIR=$(shell pwd)
 
 KUBECONFIG := "$(TOPDIR)/kubeconfig"
 
-DOMAIN := tests.gitpod-self-hosted.com
+DOMAIN := tests.doptig.com
 
 check-env-sub-domain:
 ifndef TF_VAR_TEST_ID
@@ -53,8 +53,8 @@ gcp-kubeconfig:
 ## azure-kubeconfig: Get the kubeconfig configuration for Azure AKS
 azure-kubeconfig:
 	export KUBECONFIG=${KUBECONFIG} && \
-	export resource=$$(echo "$$TF_VAR_TEST_ID" | sed "s/[\\W\\-]//") && \
-	az aks get-credentials --name gitpod-test-nor-primary-$$resource --resource-group gitpod-test-nor-$$resource --file ${KUBECONFIG} || echo "No cluster present"
+	export resource=$$(echo "$$TF_VAR_TEST_ID" | sed "s/[\\W\\-]//g") && \
+	az aks get-credentials --name test-cluster-$$resource --resource-group sh-test-$$resource --file ${KUBECONFIG} || echo "No cluster present"
 
 ## aws-kubeconfig: Get the kubeconfig configuration for AWS EKS
 aws-kubeconfig:
@@ -190,6 +190,9 @@ registry-config-gcp:
 
 db-config-gcp:
 	export BASE64_GCP_KEY=$$(cat $$TF_VAR_sa_creds | tr -d '\n' | base64 -w 0) && \
+	export DB_OUTPUT=$$(terraform output -json k3s_database || terraform output -json gcp_database)
+	export DB_INSTANCE=$$(DB_OUTPUT | yq r - 'instance') && \
+	export DB_PASSWORD=$$(DB_OUTPUT | yq r - 'password') && \
 	envsubst < ./manifests/kots-config-gcp-db.yaml > tmp_4_config.yml
 	envsubst < tmp_4_config.yml > tmp_5_config.yml
 	yq m -i tmp_config.yml tmp_5_config.yml

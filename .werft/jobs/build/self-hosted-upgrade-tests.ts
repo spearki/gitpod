@@ -3,24 +3,29 @@ import { Werft } from "../../util/werft";
 import { JobConfig } from "./job-config";
 
 interface config {
+    cloud: string,
     phase: string;
     description: string;
 }
 
 const phases: { [name: string]: config } = {
     gke: {
+        cloud: "gcp",
         phase: "trigger upgrade test in GKE",
         description: "Triggers upgrade test on supplied version from Beta channel on GKE cluster",
     },
     aks: {
+        cloud: "azure",
         phase: "trigger upgrade test in AKS",
         description: "Triggers upgrade test on supplied version from Beta channel on AKS cluster",
     },
     k3s: {
+        cloud: "k3s",
         phase: "trigger upgrade test in K3S",
         description: "Triggers upgrade test on supplied version from Beta channel on K3S cluster",
     },
     eks: {
+        cloud: "aws",
         phase: "trigger upgrade test in EKS",
         description: "Triggers upgrade test on supplied version from Beta channel on EKS cluster",
     },
@@ -71,22 +76,27 @@ export async function triggerUpgradeTests(werft: Werft, config: JobConfig, usern
 export async function triggerSelfHostedPreview(werft: Werft, config: JobConfig, username: string) {
     const replicatedChannel =  config.replicatedChannel || config.repository.branch;
     const cluster =  config.cluster || "k3s";
-    const formattedBranch = config.repository.branch.replace("/", "-").slice(0,11)
-    const subdomain =  `${formattedBranch}-${cluster}`
-
-    var licenseFlag: string = ""
-    var customerID: string = ""
-    var annotation: string = ""
+    const formattedBranch = config.repository.branch.replace("/", "-").slice(0,10)
+    const phase = phases[cluster]
+    const subdomain =  `${formattedBranch}x-${phase.cloud}`
 
     const replicatedApp = process.env.REPLICATED_APP
+
+    var licenseFlag: string = ""
+    var annotation: string = ""
+
 
     if(!["stable", "unstable", "beta"].includes(replicatedChannel.toLowerCase())){
         werft.phase("get-replicated-license", `Create and download replicated license for ${replicatedChannel}`);
 
-        exec(`replicated customer create --app ${replicatedApp} --channel ${replicatedChannel} --name ${config.version}`,
-            { slice: "get-replicated-license"})
+        const customerID = getCustomerID(subdomain)
 
-        exec(`replicated customer download-license --app ${replicatedApp} --customer ${config.version} > license.yaml`,
+        if(customerID == "") {
+            exec(`replicated customer create --app ${replicatedApp} --channel ${replicatedChannel} --name ${subdomain}`,
+                { slice: "get-replicated-license"})
+        }
+
+        exec(`replicated customer download-license --app ${replicatedApp} --customer ${subdomain} > license.yaml`,
             { slice: "get-replicated-license", dontCheckRc: true})
 
         exec(`install -D license.yaml install/licenses/${replicatedChannel}.yaml`,
@@ -95,18 +105,7 @@ export async function triggerSelfHostedPreview(werft: Werft, config: JobConfig, 
         werft.done("get-replicated-license");
 
         licenseFlag = `-s install/licenses/${replicatedChannel}.yaml`
-
-        const ret = exec(`replicated customer ls --app ${replicatedApp} | grep ${config.version} | awk '{print $1}'`,
-                         { slice: "get-replicated-license", dontCheckRc: true})
-
-        const customerIDS = ret.stdout.split("\n").filter(item => item);
-        if(customerIDS.length > 0) {
-            customerID = customerIDS[0].trim()
-            annotation = `-a customerID=${customerID} -a replicatedApp=${replicatedApp}`
-        }
     }
-
-    exec(`cat install/licenses/${replicatedChannel}.yaml`)
 
     exec(`git config --global user.name "${username}"`);
 
@@ -116,7 +115,7 @@ export async function triggerSelfHostedPreview(werft: Werft, config: JobConfig, 
 
     annotation = `${annotation} -a cluster=${cluster} -a updateGitHubStatus=gitpod-io/gitpod -a subdomain=${subdomain}`
 
-    const testFile: string = ".werft/self-hosted-installer-tests.yaml";
+    const testFile: string = `.werft/${cluster}-installer-tests.yaml`;
 
     try {
         exec(
@@ -131,15 +130,24 @@ export async function triggerSelfHostedPreview(werft: Werft, config: JobConfig, 
         if (!config.mainBuild) {
             werft.fail("self-hosted-preview", err);
         }
-        console.log("Deleting the created license ", customerID)
-        deleteReplicatedLicense(werft, customerID)
+        console.log("Deleting the created license ", subdomain)
+        deleteReplicatedLicense(werft, subdomain)
         exec("exit 0");
     }
 }
 
-export async function deleteReplicatedLicense(werft: Werft, customerID: string) {
+export async function deleteReplicatedLicense(werft: Werft, licenseName: string) {
+    var customerID: string
+
+    if(licenseName == "") {
+        console.log("No customerID or license name found, skipping replicated license cleanup")
+        return
+    }
+
+    customerID = getCustomerID(licenseName)
+
     if(customerID == "") {
-        console.log("No customerID found, skipping replicated license cleanup")
+        console.log("Could not find license, skipping replicated license cleanup")
         return
     }
 
@@ -155,4 +163,19 @@ export async function deleteReplicatedLicense(werft: Werft, customerID: string) 
     }
 
     werft.done("delete-replicated-license")
+}
+
+function getCustomerID(licenseName: string): string {
+    var customerID: string = ""
+    const replicatedApp = process.env.REPLICATED_APP
+
+    const response = exec(`replicated customer ls --app ${replicatedApp} | grep ${licenseName} | awk '{print $1}'`,
+                        { slice: "get-replicated-license", dontCheckRc: true})
+
+    const customerIDS = response.stdout.split("\n").filter(item => item);
+    if(customerIDS.length > 0) {
+        customerID = customerIDS[0].trim()
+    }
+
+    return customerID
 }
