@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -81,6 +82,10 @@ func (us *UsageReportService) GetDownloadURL(ctx context.Context, req *api.GetDo
 		ContentType: "application/json",
 	})
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "Object %s does not exist.", req.GetName())
+		}
+
 		return nil, status.Errorf(codes.Internal, "Failed to generate download URL for usage report: %s", err.Error())
 	}
 
