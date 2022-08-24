@@ -40,7 +40,7 @@ class GitpodCLIService : RestService() {
     override fun getServiceName() = SERVICE_NAME
 
     override fun execute(urlDecoder: QueryStringDecoder, request: FullHttpRequest, context: ChannelHandlerContext): String? {
-        val operation = getStringParameter("op", urlDecoder)
+        val operation = getStringParameter("test", urlDecoder)
         if (application.isHeadlessEnvironment) {
             return "not supported in headless mode"
         }
