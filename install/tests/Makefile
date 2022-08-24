@@ -67,7 +67,8 @@ aws-kubeconfig:
 gke-standard-cluster: check-env-cluster-version
 	terraform init --upgrade && \
 	terraform workspace new $(TF_VAR_TEST_ID) || $(MAKE) select-workspace && \
-	terraform apply -target=module.gke -var kubeconfig=${KUBECONFIG} --auto-approve
+	$(MAKE) get-kubeconfig && \
+	[[ -f ${KUBECONFIG} ]] || terraform apply -target=module.gke -var kubeconfig=${KUBECONFIG} --auto-approve
 	@echo "Done creating GKE cluster"
 
 ami_id_120 := "ami-0ecb917eb4fbf4387"
@@ -88,7 +89,8 @@ eks-standard-cluster: ami_id = $(if $(ami_id_${TF_VAR_cluster_version//.}),$(ami
 eks-standard-cluster: check-env-cluster-version
 	terraform init --upgrade && \
 	terraform workspace new $(TF_VAR_TEST_ID) || $(MAKE) select-workspace && \
-	terraform apply -target=module.eks -var kubeconfig=${KUBECONFIG} -var eks_node_image_id=${ami_id} --auto-approve
+	$(MAKE) get-kubeconfig && \
+	[[ -f ${KUBECONFIG} ]] || terraform apply -target=module.eks -var kubeconfig=${KUBECONFIG} -var eks_node_image_id=${ami_id} --auto-approve
 	@echo "Done creating EKS cluster"
 
 .PHONY:
@@ -96,7 +98,8 @@ eks-standard-cluster: check-env-cluster-version
 aks-standard-cluster: check-env-cluster-version
 	terraform init --upgrade && \
 	terraform workspace new $(TF_VAR_TEST_ID) || $(MAKE) select-workspace && \
-	terraform apply -target=module.aks -var kubeconfig=${KUBECONFIG} --auto-approve
+	$(MAKE) get-kubeconfig && \
+	[[ -f ${KUBECONFIG} ]] || terraform apply -target=module.aks -var kubeconfig=${KUBECONFIG} --auto-approve
 	@echo "Done creating AKS cluster"
 
 .PHONY:
@@ -190,9 +193,10 @@ registry-config-gcp:
 
 db-config-gcp:
 	export BASE64_GCP_KEY=$$(cat $$TF_VAR_sa_creds | tr -d '\n' | base64 -w 0) && \
-	export DB_OUTPUT=$$(terraform output -json k3s_database || terraform output -json gcp_database)
-	export DB_INSTANCE=$$(DB_OUTPUT | yq r - 'instance') && \
-	export DB_PASSWORD=$$(DB_OUTPUT | yq r - 'password') && \
+	export DB_OUTPUT=$$(terraform output -json k3s_database || terraform output -json gke_database) && \
+	export DB_INSTANCE=$$(echo $$DB_OUTPUT | yq r - 'instance') && \
+	export DB_PASSWORD=$$(echo $$DB_OUTPUT | yq r - 'password') && \
+	export DB_USER=$$(echo $$DB_OUTPUT | yq r - 'username') && \
 	envsubst < ./manifests/kots-config-gcp-db.yaml > tmp_4_config.yml
 	envsubst < tmp_4_config.yml > tmp_5_config.yml
 	yq m -i tmp_config.yml tmp_5_config.yml
