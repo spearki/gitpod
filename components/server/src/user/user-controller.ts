@@ -34,6 +34,7 @@ import { WorkspaceManagerClientProvider } from "@gitpod/ws-manager/lib/client-pr
 import { EnforcementControllerServerFactory } from "./enforcement-endpoint";
 import { ClientMetadata } from "../websocket/websocket-connection-manager";
 import { ResponseError } from "vscode-jsonrpc";
+import { VerificationService } from "../auth/verification-service";
 
 @injectable()
 export class UserController {
@@ -53,6 +54,7 @@ export class UserController {
     @inject(WorkspaceManagerClientProvider)
     protected readonly workspaceManagerClientProvider: WorkspaceManagerClientProvider;
     @inject(EnforcementControllerServerFactory) private readonly serverFactory: EnforcementControllerServerFactory;
+    @inject(VerificationService) protected readonly verificationService: VerificationService;
 
     get apiRouter(): express.Router {
         const router = express.Router();

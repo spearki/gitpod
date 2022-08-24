@@ -79,6 +79,7 @@ import {
     SSHPublicKeyValue,
     UserSSHPublicKeyValue,
     PrebuildEvent,
+    AdditionalUserData,
 } from "@gitpod/gitpod-protocol";
 import { AccountStatement } from "@gitpod/gitpod-protocol/lib/accounting-protocol";
 import { BlockedRepository } from "@gitpod/gitpod-protocol/lib/blocked-repositories-protocol";
@@ -175,6 +176,7 @@ import { Currency } from "@gitpod/gitpod-protocol/lib/plans";
 import { getExperimentsClientForBackend } from "@gitpod/gitpod-protocol/lib/experiments/configcat-server";
 import { BillableSession, BillableSessionRequest } from "@gitpod/gitpod-protocol/lib/usage";
 import { WorkspaceClusterImagebuilderClientProvider } from "./workspace-cluster-imagebuilder-client-provider";
+import { VerificationService } from "../auth/verification-service";
 import { BillingMode } from "@gitpod/gitpod-protocol/lib/billing-mode";
 
 // shortcut
@@ -243,6 +245,8 @@ export class GitpodServerImpl implements GitpodServerWithTracing, Disposable {
     @inject(ConfigurationService) protected readonly configurationService: ConfigurationService;
 
     @inject(IDEConfigService) protected readonly ideConfigService: IDEConfigService;
+
+    @inject(VerificationService) protected readonly verificationService: VerificationService;
 
     /** Id the uniquely identifies this server instance */
     public readonly uuid: string = uuidv4();
@@ -438,11 +442,19 @@ export class GitpodServerImpl implements GitpodServerWithTracing, Disposable {
         //hang on to user profile before it's overwritten for analytics below
         const oldProfile = User.getProfile(user);
 
-        const allowedFields: (keyof User)[] = ["avatarUrl", "fullName", "additionalData"];
+        const allowedFields: (keyof User)[] = ["avatarUrl", "fullName"];
         for (const p of allowedFields) {
             if (p in partialUser) {
                 (user[p] as any) = partialUser[p];
             }
+        }
+        // special treatment of nested additionalData
+        if (partialUser.additionalData) {
+            const forbiddenAdditionalFields: (keyof AdditionalUserData)[] = ["lastVerificationTime"];
+            for (const p of forbiddenAdditionalFields) {
+                delete partialUser.additionalData[p];
+            }
+            AdditionalUserData.set(user, partialUser.additionalData);
         }
 
         await this.userDB.updateUserPartial(user);
@@ -462,6 +474,27 @@ export class GitpodServerImpl implements GitpodServerWithTracing, Disposable {
         }
 
         return user;
+    }
+
+    public async sendPhoneNumberVerificationToken(ctx: TraceContext, phoneNumber: string): Promise<void> {
+        this.checkUser("sendPhoneNumberVerificationToken");
+        return this.verificationService.sendVerificationToken(phoneNumber);
+    }
+
+    public async verifyPhoneNumberVerificationToken(
+        ctx: TraceContext,
+        phoneNumber: string,
+        token: string,
+    ): Promise<boolean> {
+        const user = this.checkUser("verifyPhoneNumberVerificationToken");
+        const checked = await this.verificationService.verifyVerificationToken(phoneNumber, token);
+        if (!checked) {
+            return false;
+        }
+        this.verificationService.markVerified(user);
+        AdditionalUserData.set(user, { verificationPhoneNumber: phoneNumber });
+        await this.userDB.updateUserPartial(user);
+        return true;
     }
 
     public async getClientRegion(ctx: TraceContext): Promise<string | undefined> {
@@ -1183,14 +1216,6 @@ export class GitpodServerImpl implements GitpodServerWithTracing, Disposable {
                 error && error.message ? error.message : `Cannot create workspace for URL: ${normalizedContextUrl}`,
             );
         }
-    }
-
-    /**
-     * This is an explicit extension point for allowing downstream versions of Gitpod to selectively restrict access.
-     * @returns true if the user is allowed to access the repository
-     */
-    protected async mayStartWorkspaceOnRepo(): Promise<boolean> {
-        return true;
     }
 
     protected parseErrorCode(error: any) {

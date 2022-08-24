@@ -32,6 +32,8 @@ import { AttributionId } from "@gitpod/gitpod-protocol/lib/attribution";
 import { StripeService } from "../../ee/src/user/stripe-service";
 import { ResponseError } from "vscode-ws-jsonrpc";
 import { ErrorCodes } from "@gitpod/gitpod-protocol/lib/messaging/error";
+import { daysBefore, isDateSmaller } from "@gitpod/gitpod-protocol/lib/util/timeutil";
+import { VerificationService } from "../auth/verification-service";
 
 export interface FindUserByIdentityStrResult {
     user: User;
@@ -72,6 +74,7 @@ export class UserService {
     @inject(CostCenterDB) protected readonly costCenterDb: CostCenterDB;
     @inject(TeamDB) protected readonly teamDB: TeamDB;
     @inject(StripeService) protected readonly stripeService: StripeService;
+    @inject(VerificationService) protected readonly verificationService: VerificationService;
 
     /**
      * Takes strings in the form of <authHost>/<authName> and returns the matching User
@@ -418,6 +421,11 @@ export class UserService {
         // update user
         user.name = user.name || authUser.name || authUser.primaryEmail;
         user.avatarUrl = user.avatarUrl || authUser.avatarUrl;
+
+        if (authUser.created_at && isDateSmaller(authUser.created_at, daysBefore(new Date().toISOString(), 30))) {
+            // people with an account older than 30 days are treated as trusted
+            this.verificationService.markVerified(user);
+        }
 
         await this.updateUserIdentity(user, candidate, token);
     }

@@ -66,6 +66,9 @@ export class UserDeletionService {
             this.deleteIdentities(user);
             await this.deleteTokens(db, user);
             user.markedDeleted = true;
+            if (user.additionalData) {
+                delete user.additionalData.lastVerificationTime;
+            }
             await db.storeUser(user);
         });
 

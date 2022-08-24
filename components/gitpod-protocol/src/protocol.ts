@@ -206,8 +206,26 @@ export interface AdditionalUserData {
     workspaceClasses?: WorkspaceClasses;
     // additional user profile data
     profile?: ProfileDetails;
+    // verification date
+    lastVerificationTime?: string;
+    // verification phone number
+    verificationPhoneNumber?: string;
 }
-
+export namespace AdditionalUserData {
+    export function set(user: User, partialData: Partial<AdditionalUserData>): User {
+        if (!user.additionalData) {
+            user.additionalData = {
+                ...partialData,
+            };
+        } else {
+            user.additionalData = {
+                ...user.additionalData,
+                ...partialData,
+            };
+        }
+        return user;
+    }
+}
 // The format in which we store User Profiles in
 export interface ProfileDetails {
     // when was the last time the user updated their profile information or has been nudged to do so.
