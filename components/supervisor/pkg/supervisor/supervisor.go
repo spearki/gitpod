@@ -295,7 +295,7 @@ func Run(options ...RunOption) {
 		termMuxSrv,
 		RegistrableTokenService{Service: tokenService},
 		notificationService,
-		&InfoService{cfg: cfg, ContentState: cstate},
+		&InfoService{cfg: cfg, ContentState: cstate, gitpodService: gitpodService},
 		&ControlService{portsManager: portMgmt},
 		&portService{portsManager: portMgmt},
 	}
@@ -605,6 +605,7 @@ func createGitpodService(cfg *Config, tknsrv api.TokenServiceServer) *gitpod.API
 			"function:openPort",
 			"function:getOpenPorts",
 			"function:guessGitTokenScopes",
+			"function:getSupportedWorkspaceClasses",
 		},
 	})
 	if err != nil {

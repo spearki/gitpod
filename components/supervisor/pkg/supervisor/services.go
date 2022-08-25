@@ -24,6 +24,7 @@ import (
 
 	"github.com/gitpod-io/gitpod/common-go/log"
 	csapi "github.com/gitpod-io/gitpod/content-service/api"
+	gitpod "github.com/gitpod-io/gitpod/gitpod-protocol"
 	"github.com/gitpod-io/gitpod/supervisor/api"
 	"github.com/gitpod-io/gitpod/supervisor/pkg/ports"
 )
@@ -623,8 +624,10 @@ func (rt *remoteTokenProvider) GetToken(ctx context.Context, req *api.GetTokenRe
 
 // InfoService implements the api.InfoService.
 type InfoService struct {
-	cfg          *Config
-	ContentState ContentState
+	cfg            *Config
+	gitpodService  *gitpod.APIoverJSONRPC
+	workspaceClass *api.WorkspaceInfoResponse_WorkspaceClass
+	ContentState   ContentState
 
 	api.UnimplementedInfoServiceServer
 }
@@ -640,7 +643,7 @@ func (is *InfoService) RegisterREST(mux *runtime.ServeMux, grpcEndpoint string) 
 }
 
 // WorkspaceInfo provides information about the workspace.
-func (is *InfoService) WorkspaceInfo(context.Context, *api.WorkspaceInfoRequest) (*api.WorkspaceInfoResponse, error) {
+func (is *InfoService) WorkspaceInfo(ctx context.Context, req *api.WorkspaceInfoRequest) (*api.WorkspaceInfoResponse, error) {
 	resp := &api.WorkspaceInfoResponse{
 		CheckoutLocation:     is.cfg.RepoRoot,
 		InstanceId:           is.cfg.WorkspaceInstanceID,
@@ -651,6 +654,34 @@ func (is *InfoService) WorkspaceInfo(context.Context, *api.WorkspaceInfoRequest)
 		WorkspaceUrl:         is.cfg.WorkspaceUrl,
 		IdeAlias:             is.cfg.IDEAlias,
 		IdePort:              uint32(is.cfg.IDEPort),
+		WorkspaceClass:       &api.WorkspaceInfoResponse_WorkspaceClass{Id: is.cfg.WorkspaceClass},
+	}
+	if is.workspaceClass == nil {
+		if classes, err := is.gitpodService.GetSupportedWorkspaceClasses(ctx); err != nil {
+			log.WithError(err).Error("cannot get supported workspace classes")
+		} else {
+			log.WithField("classes", classes).WithField("id", is.cfg.WorkspaceClass).Info("supported workspace classes")
+			for _, wsCls := range classes {
+				if wsCls.ID == is.cfg.WorkspaceClass {
+					found := &api.WorkspaceInfoResponse_WorkspaceClass{
+						Id:          wsCls.ID,
+						Category:    wsCls.Category,
+						DisplayName: wsCls.DisplayName,
+						Description: wsCls.Description,
+						Powerups:    uint32(wsCls.Powerups),
+						IsDefault:   wsCls.IsDefault,
+					}
+					resp.WorkspaceClass = found
+					is.workspaceClass = found
+					break
+				}
+			}
+			if is.workspaceClass == nil {
+				log.Error("cannot find matched class")
+			}
+		}
+	} else {
+		resp.WorkspaceClass = is.workspaceClass
 	}
 
 	commit, err := is.cfg.getCommit()
