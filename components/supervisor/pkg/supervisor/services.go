@@ -626,6 +626,7 @@ func (rt *remoteTokenProvider) GetToken(ctx context.Context, req *api.GetTokenRe
 type InfoService struct {
 	cfg            *Config
 	gitpodService  *gitpod.APIoverJSONRPC
+	tokenService   *InMemoryTokenService
 	workspaceClass *api.WorkspaceInfoResponse_WorkspaceClass
 	ContentState   ContentState
 
@@ -657,29 +658,9 @@ func (is *InfoService) WorkspaceInfo(ctx context.Context, req *api.WorkspaceInfo
 		WorkspaceClass:       &api.WorkspaceInfoResponse_WorkspaceClass{Id: is.cfg.WorkspaceClass},
 	}
 	if is.workspaceClass == nil {
-		if classes, err := is.gitpodService.GetSupportedWorkspaceClasses(ctx); err != nil {
-			log.WithError(err).Error("cannot get supported workspace classes")
-		} else {
-			log.WithField("classes", classes).WithField("id", is.cfg.WorkspaceClass).Info("supported workspace classes")
-			for _, wsCls := range classes {
-				if wsCls.ID == is.cfg.WorkspaceClass {
-					found := &api.WorkspaceInfoResponse_WorkspaceClass{
-						Id:          wsCls.ID,
-						Category:    wsCls.Category,
-						DisplayName: wsCls.DisplayName,
-						Description: wsCls.Description,
-						Powerups:    uint32(wsCls.Powerups),
-						IsDefault:   wsCls.IsDefault,
-					}
-					resp.WorkspaceClass = found
-					is.workspaceClass = found
-					break
-				}
-			}
-			if is.workspaceClass == nil {
-				log.Error("cannot find matched class")
-			}
-		}
+		wsCls := is.getWorkspaceClass(ctx)
+		is.workspaceClass = wsCls
+		resp.WorkspaceClass = wsCls
 	} else {
 		resp.WorkspaceClass = is.workspaceClass
 	}
@@ -721,6 +702,38 @@ func (is *InfoService) WorkspaceInfo(ctx context.Context, req *api.WorkspaceInfo
 	}
 
 	return resp, nil
+}
+
+// getWorkspaceClass of current workspace
+func (is *InfoService) getWorkspaceClass(ctx context.Context) *api.WorkspaceInfoResponse_WorkspaceClass {
+	if is.gitpodService == nil {
+		gitpodService, err := createServerService(is.cfg, is.tokenService, []string{"function:getSupportedWorkspaceClasses"})
+		if err != nil {
+			log.WithError(err).Error("cannot create server service")
+			return nil
+		}
+		is.gitpodService = gitpodService
+	}
+	classes, err := is.gitpodService.GetSupportedWorkspaceClasses(ctx)
+	if err != nil {
+		log.WithError(err).Error("cannot get supported workspace classes")
+		return nil
+	}
+	log.WithField("classes", classes).WithField("id", is.cfg.WorkspaceClass).Info("supported workspace classes")
+	for _, wsCls := range classes {
+		if wsCls.ID == is.cfg.WorkspaceClass {
+			found := &api.WorkspaceInfoResponse_WorkspaceClass{
+				Id:          wsCls.ID,
+				Category:    wsCls.Category,
+				DisplayName: wsCls.DisplayName,
+				Description: wsCls.Description,
+				Powerups:    uint32(wsCls.Powerups),
+				IsDefault:   wsCls.IsDefault,
+			}
+			return found
+		}
+	}
+	return nil
 }
 
 // ControlService implements the supervisor control service.

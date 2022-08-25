@@ -295,7 +295,7 @@ func Run(options ...RunOption) {
 		termMuxSrv,
 		RegistrableTokenService{Service: tokenService},
 		notificationService,
-		&InfoService{cfg: cfg, ContentState: cstate, gitpodService: gitpodService},
+		&InfoService{cfg: cfg, ContentState: cstate, tokenService: tokenService},
 		&ControlService{portsManager: portMgmt},
 		&portService{portsManager: portMgmt},
 	}
@@ -592,38 +592,17 @@ func installDotfiles(ctx context.Context, cfg *Config, tokenService *InMemoryTok
 }
 
 func createGitpodService(cfg *Config, tknsrv api.TokenServiceServer) *gitpod.APIoverJSONRPC {
-	endpoint, host, err := cfg.GitpodAPIEndpoint()
-	if err != nil {
-		log.WithError(err).Fatal("cannot find Gitpod API endpoint")
-		return nil
-	}
-	tknres, err := tknsrv.GetToken(context.Background(), &api.GetTokenRequest{
-		Kind: KindGitpod,
-		Host: host,
-		Scope: []string{
-			"function:getToken",
-			"function:openPort",
-			"function:getOpenPorts",
-			"function:guessGitTokenScopes",
-			"function:getSupportedWorkspaceClasses",
-		},
+	gitpodService, err := createServerService(cfg, tknsrv, []string{
+		"function:getToken",
+		"function:openPort",
+		"function:getOpenPorts",
+		"function:guessGitTokenScopes",
 	})
 	if err != nil {
-		log.WithError(err).Error("cannot get token for Gitpod API")
-		return nil
-	}
-
-	gitpodService, err := gitpod.ConnectToServer(endpoint, gitpod.ConnectToServerOpts{
-		Token: tknres.Token,
-		Log:   log.Log,
-		ExtraHeaders: map[string]string{
-			"User-Agent":              "gitpod/supervisor",
-			"X-Workspace-Instance-Id": cfg.WorkspaceInstanceID,
-			"X-Client-Version":        Version,
-		},
-	})
-	if err != nil {
-		log.WithError(err).Error("cannot connect to Gitpod API")
+		if errors.Is(err, gitpodApiEndpointNotFound) {
+			log.Fatal(err)
+		}
+		log.WithError(err).Error("cannot create server service")
 		return nil
 	}
 	return gitpodService
