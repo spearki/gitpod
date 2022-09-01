@@ -23,7 +23,13 @@ func main() {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 
-	var err error
+	// Set log output to /tmp/runc.log file.
+	f, err := os.OpenFile("/tmp/runc.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.WithError(err).Fatal("cannot open log file")
+	}
+	log.SetOutput(f)
+
 	runcPath, err := exec.LookPath("runc")
 	if err != nil {
 		log.WithError(err).Fatal("runc not found")
@@ -45,6 +51,15 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("failed")
 	}
+}
+
+func runc(runcPath string, log *logrus.Logger) error {
+	// Run command at runcPath
+	cmd := exec.Command(runcPath, os.Args[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
 }
 
 func createAndRunc(runcPath string, log *logrus.Logger) error {
@@ -86,9 +101,16 @@ func createAndRunc(runcPath string, log *logrus.Logger) error {
 		}
 	}
 
-	err = syscall.Exec(runcPath, os.Args, os.Environ())
+	retries := 2
+	for i := 0; i < retries; i++ {
+		err = runc(runcPath, log)
+		if err == nil {
+			return nil
+		}
+		log.Warnln("runc failed, retrying...")
+	}
 	if err != nil {
-		return xerrors.Errorf("exec %s: %w", runcPath, err)
+		return xerrors.Errorf("runc failed: %w", err)
 	}
 	return nil
 }
